@@ -31,18 +31,19 @@ import com.nimbusds.jose.Payload;
 import com.nimbusds.jose.crypto.AESEncrypter;
 import com.nimbusds.jose.crypto.RSAEncrypter;
 import net.minidev.json.JSONObject;
-import org.apache.commons.io.IOUtils;
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.security.interfaces.RSAPublicKey;
+import java.io.FileReader;
+
+import static org.hypoport.jwt.common.Toolbox.readKey;
+import static org.hypoport.jwt.common.Toolbox.readRSAPublicKey;
 
 public class JWEGenerator {
 
-  static void encrypt(JSONObject header, JWEAlgorithm algorithm, String payload, String keyFile) throws Exception {
-    final JWEObject jweObject = new JWEObject(new JWEHeader.Builder(algorithm, getEnc(header)).customParams(header).build(), new Payload(payload));
-    jweObject.encrypt(getEncrypter(algorithm, keyFile));
-    System.out.println(jweObject.serialize());
+  static String encrypt(JSONObject header, JWEAlgorithm algorithm, String payload, FileReader keyReader) throws Exception {
+    final JWEHeader jweHeader = new JWEHeader.Builder(algorithm, getEnc(header)).customParams(header).build();
+    final JWEObject jweObject = new JWEObject(jweHeader, new Payload(payload));
+    jweObject.encrypt(getEncrypter(algorithm, keyReader));
+    return jweObject.serialize();
   }
 
   static EncryptionMethod getEnc(JSONObject header) {
@@ -67,23 +68,18 @@ public class JWEGenerator {
     }
   }
 
-  private static JWEEncrypter getEncrypter(JWEAlgorithm jweAlgorithm, String keyFile) throws Exception {
+  private static JWEEncrypter getEncrypter(JWEAlgorithm jweAlgorithm, FileReader keyReader) throws Exception {
     final String name = jweAlgorithm.getName();
     if (name.startsWith("RSA")) {
-      return new RSAEncrypter(readRSAPublicKey());
+      return new RSAEncrypter(readRSAPublicKey(keyReader));
+    }
+    if (name.startsWith("ECDH")) {
+      throw new UnsupportedOperationException("Elliptic curve encryption is not unsupported yet.");
     }
     if (name.startsWith("A")) {
-      return new AESEncrypter(readKey(keyFile));
+      return new AESEncrypter(readKey(keyReader));
     }
 
     throw new IllegalArgumentException();
-  }
-
-  static RSAPublicKey readRSAPublicKey() {
-    throw new UnsupportedOperationException();
-  }
-
-  private static byte[] readKey(String keyFile) throws IOException {
-    return IOUtils.toByteArray(new FileInputStream(keyFile));
   }
 }
