@@ -46,7 +46,7 @@ public class Ep2JwtFactory {
 
     String jwt = new Ep2JwtFactory().createEp2Jwt(pem, sub, iss, exp);
 
-    System.out.print(jwt);
+    System.out.println(jwt);
   }
 
   public String createEp2Jwt(String pem, String sub, String iss, Date exp) throws JOSEException {
