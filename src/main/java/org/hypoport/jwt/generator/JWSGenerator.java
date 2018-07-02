@@ -52,7 +52,7 @@ public class JWSGenerator {
       return new RSASSASigner(readRSAPrivateKey(keyReader));
     }
     if (name.startsWith("ES")) {
-      return new ECDSASigner(readECDSAPrivateKey(keyReader).getS());
+      return new ECDSASigner(readECDSAPrivateKey(keyReader));
     }
     if (name.startsWith("HS")) {
       return new MACSigner(readKey(keyReader));
