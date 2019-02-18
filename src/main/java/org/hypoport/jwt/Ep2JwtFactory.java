@@ -38,15 +38,28 @@ public class Ep2JwtFactory {
       System.exit(1);
     }
 
-    Path pemFile = Paths.get(args[0]);
-    String pem = Files.readAllLines(pemFile).stream().collect(joining());
+    int jwtDurationTimeInMillis = 60000;
+    String arg0 = args[0];
     String sub = args[1];
     String iss = args.length > 2 ? args[2] : sub;
-    Date exp = new Date(new Date().getTime() + 60000);
-
-    String jwt = new Ep2JwtFactory().createEp2Jwt(pem, sub, iss, exp);
+    Path pemFile = Paths.get(arg0);
+    String pem = readPemFile(pemFile);
+    String jwt = createEp2JwtToken(sub, iss, pem, jwtDurationTimeInMillis);
 
     System.out.println(jwt);
+  }
+
+  private static String readPemFile(Path pemFile) throws IOException {
+    return Files.readAllLines(pemFile).stream().collect(joining());
+  }
+
+  public static String createEp2JwtToken(String sub, String iss, String pem, int jwtDurationTimeInMillis) throws JOSEException {
+    Date exp = calcExpirationDate(jwtDurationTimeInMillis);
+    return new Ep2JwtFactory().createEp2Jwt(pem, sub, iss, exp);
+  }
+
+  private static Date calcExpirationDate(int jwtDurationTimeInMillis) {
+    return new Date(new Date().getTime() + jwtDurationTimeInMillis);
   }
 
   public String createEp2Jwt(String pem, String sub, String iss, Date exp) throws JOSEException {
@@ -57,9 +70,9 @@ public class Ep2JwtFactory {
     JWSSigner signer = new RSASSASigner(getPrivateKey(decodeBase64(key)));
 
     // Prepare JWT with claims set
-    JWTClaimsSet claimsSet = new JWTClaimsSet();
-    claimsSet.setSubject(sub);
-    claimsSet.setExpirationTime(exp);
+    Map<String, Object> map = new HashMap<>();
+
+    JWTClaimsSet claimsSet = new JWTClaimsSet.Builder().subject(sub).expirationTime(exp).build();
 
     Map<String, Object> custom = new HashMap<>();
     custom.put("iss", iss);
